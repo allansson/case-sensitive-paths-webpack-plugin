@@ -30,8 +30,12 @@
 
 const path = require('path');
 
+const defaultOptions = {
+  exclude: []
+}
+ 
 function CaseSensitivePathsPlugin(options) {
-  this.options = options || {};
+  this.options = Object.assign({}, defaultOptions, options || {});
   this.logger = this.options.logger || console;
   this.pathCache = new Map();
   this.reset();
@@ -86,12 +90,13 @@ CaseSensitivePathsPlugin.prototype.fileExistsWithCase = function(
   const filename = path.basename(filepath);
   const parsedPath = path.parse(dir);
 
-  // If we are at the root, or have found a path we already know is good, return.
+  // If we are at the root, have found a path we already know is good or the path is excluded, return.
   if (
     parsedPath.dir === parsedPath.root ||
-    dir === '.' ||
-    that.pathCache.has(filepath)
-  ) {
+    dir === '.' || 
+    that.pathCache.has(filepath) ||
+    that.options.exclude.some(p => p.test(filepath))
+  ) { 
     callback();
     return;
   }

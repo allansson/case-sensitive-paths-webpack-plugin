@@ -13,7 +13,7 @@ const webpackPkg = require('webpack/package.json');
 
 const CaseSensitivePathsPlugin = require('../');
 
-function webpackCompilerAtDir(dir, otherOpts, useBeforeEmitHook) {
+function webpackCompilerAtDir(dir, otherOpts, pluginOpts) {
   const opts = Object.assign(
     {
       context: path.join(__dirname, 'fixtures', dir),
@@ -24,10 +24,8 @@ function webpackCompilerAtDir(dir, otherOpts, useBeforeEmitHook) {
         filename: 'result.js',
       },
       plugins: [
-        new CaseSensitivePathsPlugin({
-          useBeforeEmitHook: useBeforeEmitHook,
-        }),
-      ],
+        new CaseSensitivePathsPlugin(pluginOpts),
+      ], 
     },
     otherOpts,
   );
@@ -91,9 +89,23 @@ describe('CaseSensitivePathsPlugin', () => {
       });
     });
 
+    it('should compile when file with wrong casing has been excluded', (done) => {
+      const compiler = webpackCompilerAtDir('exclude-file', {}, { exclude: [/ignored/]});
+ 
+      return compiler.run((err, stats) => {
+        if (err) done(err);
+        assert.equal(stats.hasErrors(), false);
+        assert.equal(stats.hasWarnings(), false);
+        const jsonStats = stats.toJson();
+        assert.equal(jsonStats.errors.length, 0);
+  
+        done();
+      });
+    });
+ 
     it('should handle errors correctly in emit hook mode', (done) => {
-      const compiler = webpackCompilerAtDir('wrong-case', {}, true);
-
+      const compiler = webpackCompilerAtDir('wrong-case', {}, { useBeforeEmitHook: true });
+ 
       compiler.run((err, stats) => {
         if (err) done(err);
         assert(stats.hasErrors());
